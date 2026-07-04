@@ -1,14 +1,18 @@
 import discord
 from discord.ext import commands, tasks
 import os
+import sys
 import aiohttp
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # =========================================================
 # CONFIGURAÇÕES
 # =========================================================
 
-TOKEN = "MTUwNjI4MjQ2NjI4ODMzNjk4Ng.GPLLrQ.EvaGgSHcgLxR5SD5LJLL6vWB-bMKOMtcioIf3k"
+TOKEN = os.getenv("DISCORD_TOKEN")
 
 CANAL_BOAS_VINDAS = 1378375304904704097
 CANAL_TESTE = 1506282571565109460
@@ -19,6 +23,8 @@ ID_CANAL_CRIPTA = 1378387938571976754
 ID_CANAL_CARGOS = 1522218186710188273
 ID_CANAL_AVISOS = 1522142065813754038
 
+ID_CARGO_AUTOMATICO = 1420123782357717026
+
 IMAGEM_BOAS = os.path.join("img", "IMAGEMboas.png")
 IMAGEM_REGRAS = os.path.join("img", "cuzinho.png")
 
@@ -28,8 +34,8 @@ IMAGEM_REGRAS = os.path.join("img", "cuzinho.png")
 # Crie um app em https://dev.twitch.tv/console/apps e cole o
 # Client ID e o Client Secret abaixo.
 
-TWITCH_CLIENT_ID = "i82p8tb566fwbed6ptomx23oxfvapa"
-TWITCH_CLIENT_SECRET = "84wcyqlgb0ff4hw704udpy65jfk02f"
+TWITCH_CLIENT_ID = os.getenv("TWITCH_CLIENT_ID")
+TWITCH_CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET")
 
 TWITCH_USER_LOGIN = "murcega08"
 
@@ -944,6 +950,32 @@ async def on_member_join(member):
     log(f"Avatar URL: {member.display_avatar.url}")
     log("=" * 60)
 
+    # ---------------------------------------------------
+    # CARGO AUTOMÁTICO
+    # ---------------------------------------------------
+
+    try:
+
+        cargo = member.guild.get_role(ID_CARGO_AUTOMATICO)
+
+        if cargo is None:
+
+            log("ERRO: Cargo automático não encontrado no servidor.")
+
+        else:
+
+            await member.add_roles(cargo, reason="Cargo automático ao entrar no servidor.")
+
+            log(f"Cargo '{cargo.name}' atribuído automaticamente a {member}.")
+
+    except discord.Forbidden:
+
+        log("ERRO: Bot sem permissão para atribuir o cargo automático (verifique MANAGE_ROLES e a posição do cargo do bot na hierarquia).")
+
+    except Exception as erro:
+
+        log(f"ERRO AO ATRIBUIR CARGO AUTOMÁTICO: {erro}")
+
     try:
 
         canal = bot.get_channel(CANAL_BOAS_VINDAS)
@@ -1134,5 +1166,14 @@ async def on_error(event, *args, **kwargs):
 # =========================================================
 
 log("INICIANDO BOT...")
+
+if not TOKEN:
+
+    log("ERRO FATAL: DISCORD_TOKEN não encontrado. Verifique se o arquivo .env existe e está preenchido.")
+    sys.exit(1)
+
+if not TWITCH_CLIENT_ID or not TWITCH_CLIENT_SECRET:
+
+    log("AVISO: TWITCH_CLIENT_ID ou TWITCH_CLIENT_SECRET não encontrados no .env. O aviso de live não vai funcionar.")
 
 bot.run(TOKEN)
